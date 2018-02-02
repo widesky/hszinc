@@ -379,7 +379,7 @@ hs_null         = Literal('N').setParseAction(\
 # literal: we cannot support implicit NULLs as they are ambiguous.
 hs_list         = GenerateMatch(                            \
         lambda ver : Group(Or([                             \
-            Suppress(Regex(r'[ *]')),                       \
+            Suppress(Regex(r'\[ *\]')),                     \
             And([                                           \
                 Suppress(Regex(r'\[ *')),                   \
                 Optional(DelimitedList(                     \

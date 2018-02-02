@@ -390,13 +390,44 @@ hs_list         = GenerateMatch(                            \
             ])                                              \
         ])).setParseAction(lambda toks : toks.asList()))
 
+# Dicts, are space-delimited key-value pairs, much like grid/column metadata.
+hs_dictItemPair     = GenerateMatch(\
+        lambda ver : And([ \
+            hs_id, \
+            Suppress(And([ \
+                ZeroOrMore(Literal(' ')), \
+                Literal(':'), \
+                ZeroOrMore(Literal(' ')) \
+            ])), \
+            hs_scalar[ver] \
+        ]).setParseAction(lambda toks : [tuple(toks[:2])]).setName('dictItemPair'))
+hs_dictItemMarker   = hs_id.copy().setParseAction(\
+        lambda toks : [(toks[0], MARKER)]).setName('dictItemMarker')
+hs_dictItem     = GenerateMatch(\
+        lambda ver : Or([\
+                hs_dictItemMarker, \
+                hs_dictItemPair[ver]\
+            ]).setName('dictItem'))
+
+# As distinct from hs_meta below, a dict is surrounded by curly braces
+hs_dict         = GenerateMatch(\
+        lambda ver : Group(And([ \
+                Suppress(Regex(r'\{ *')), \
+                DelimitedList(hs_dictItem[ver], \
+                delim=' ').setParseAction(\
+                lambda toks : [SortableDict(toks.asList())] \
+                ).setName('dict'), \
+                Suppress(Regex(r' *\}')), \
+            ])))
+
 # All possible scalar values, by Haystack version
 hs_scalar_2_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
             hs_remove, hs_bool]).setName('scalar')
 hs_scalar_3_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
-            hs_remove, hs_bool, hs_list[VER_3_0]]).setName('scalar')
+            hs_remove, hs_bool, hs_list[VER_3_0],
+            hs_dict[VER_3_0]]).setName('scalar')
 
 # Tag IDs
 hs_id           = Regex(r'[a-z][a-zA-Z0-9_]*').setName('id')
@@ -409,25 +440,11 @@ hs_nl           = Combine(And([Optional(Literal('\r')), Literal('\n')]))
 
 hs_row          = GenerateMatch(\
         lambda ver : Group(DelimitedList(hs_cell[ver], delim=hs_valueSep)))
-hs_metaPair     = GenerateMatch(\
-        lambda ver : And([ \
-            hs_id, \
-            Suppress(And([ \
-                ZeroOrMore(Literal(' ')), \
-                Literal(':'), \
-                ZeroOrMore(Literal(' ')) \
-            ])), \
-            hs_scalar[ver] \
-        ]).setParseAction(lambda toks : [tuple(toks[:2])]).setName('metaPair'))
-hs_metaMarker   = hs_id.copy().setParseAction(\
-        lambda toks : [(toks[0], MARKER)]).setName('metaMarker')
-hs_metaItem     = GenerateMatch(\
-        lambda ver : Or([\
-                hs_metaMarker, \
-                hs_metaPair[ver]\
-            ]).setName('metaItem'))
+
+# Even though Haystack 2.0 does not have "dict"s, their structure is the same as
+# the metadata given here, so we borrow the same grammar.
 hs_meta         = GenerateMatch(\
-        lambda ver : DelimitedList(hs_metaItem[ver], \
+        lambda ver : DelimitedList(hs_dictItem[ver], \
                 delim=' ').setParseAction(\
                     lambda toks : [SortableDict(toks.asList())] \
             ).setName('meta'))

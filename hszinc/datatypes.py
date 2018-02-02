@@ -378,12 +378,39 @@ class Bin(six.text_type):
             return NotImplemented
         return super(Bin, self).__eq__(other)
 
+
+class XStr(six.text_type):
+    """
+    A class that represents a XStr.
+    """
+    def __init__(xstr_type, xstr_val, *args, **kwargs):
+        self._xstr_type = six.text_type(xstr_type, *args, **kwargs)
+        super(XStr, self).__init__(xstr_val, *args, **kwargs)
+
+    @property
+    def xstr_type(self):
+        return self._xstr_type
+
+    def __repr__(self):
+        return '%s(%r, %s)' % (self.xstr_type, super(XStr, self).__repr__())
+
+    def __eq__(self, other):
+        if not isinstance(other, XStr):
+            return NotImplemented
+
+        if other.xstr_type != self.xstr_type:
+            return False
+
+        return super(XStr, self).__eq__(other)
+
+
 class Singleton(object):
     def __copy__(self):
         return self
 
     def __deepcopy__(self, memo):
         return self
+
 
 class MarkerType(Singleton):
     """
@@ -393,6 +420,7 @@ class MarkerType(Singleton):
         return 'MARKER'
 
 MARKER = MarkerType()
+
 
 class RemoveType(Singleton):
     """

@@ -390,6 +390,9 @@ hs_list         = GenerateMatch(                            \
             ])                                              \
         ])).setParseAction(lambda toks : toks.asList()))
 
+# Tag IDs, used in dicts and metadata.
+hs_id           = Regex(r'[a-z][a-zA-Z0-9_]*').setName('id')
+
 # Dicts, are space-delimited key-value pairs, much like grid/column metadata.
 hs_dictItemPair     = GenerateMatch(\
         lambda ver : And([ \
@@ -420,6 +423,10 @@ hs_dict         = GenerateMatch(\
                 Suppress(Regex(r' *\}')), \
             ])))
 
+# We need the building blocks for grids that come later, so forward declare
+# sub grids here.
+hs_subgrid      = Forward()
+
 # All possible scalar values, by Haystack version
 hs_scalar_2_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
@@ -427,10 +434,7 @@ hs_scalar_2_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
 hs_scalar_3_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
             hs_remove, hs_bool, hs_list[VER_3_0],
-            hs_dict[VER_3_0]]).setName('scalar')
-
-# Tag IDs
-hs_id           = Regex(r'[a-z][a-zA-Z0-9_]*').setName('id')
+            hs_dict[VER_3_0], hs_subgrid]).setName('scalar')
 
 # Grid building blocks
 hs_cell         = GenerateMatch(                                                \
@@ -464,7 +468,8 @@ hs_cols         = GenerateMatch(\
             hs_col[ver], delim=hs_valueSep).setParseAction( # + hs_nl
                 lambda toks : [SortableDict(toks.asList())]))
 
-hs_gridVer      = Combine(And([Suppress(Literal('ver:')) + hs_str]))
+hs_gridVerTag   = Suppress(Literal('ver:'))
+hs_gridVer      = Combine(And([hs_gridVerTag + hs_str]))
 
 def _assign_ver(toks):
     ver = toks[0]
@@ -474,6 +479,8 @@ def _assign_ver(toks):
         grid_meta = SortableDict()
 
     # Put 'ver' at the start
+    if not isinstance(ver, six.string_types):
+        ver = ver[0]
     grid_meta.add_item('ver', ver, index=0)
     return grid_meta
 hs_gridMeta     = GenerateMatch(\
@@ -485,6 +492,73 @@ hs_gridMeta     = GenerateMatch(\
             ])).setName('gridMeta')
         ]).setParseAction(_assign_ver)) # + hs_nl
 
+
+# So, we can have a grid that's a different version than its parent.
+# This **greatly** increases parsing complexity.  Don't expect miracles here!
+def _parse_subgrid(toks):
+    # This will come wrapped up a little bit.
+    (meta, cols, rows) = toks[0]
+    cols = cols[0]
+
+    g = Grid(version=meta.pop('ver'),
+            metadata=meta,
+            columns=list(cols.items()))
+
+    # Last row may be [None], so strip that.
+    rows = rows.asList()
+    while len(rows) and (rows[-1] == [None]):
+        rows.pop()
+
+    col_names = list(cols.keys())
+    g.extend(map(lambda r : dict(zip(col_names, r)), rows))
+    return [g]
+
+hs_subgrid      <<= Group(And([
+    Suppress(Literal('<<')),
+    Or([
+        # Project Haystack 2.0 grid
+        And([
+            # Metadata row
+            Group(And([
+                # ver:"2.0"
+                And([hs_gridVerTag + Literal('"2.0"')]).setParseAction(\
+                        lambda *a, **kwa : ['2.0']),
+                # optional metadata tags
+                Optional(And([
+                    Suppress(Literal(' ')),
+                    hs_meta["2.0"]
+                ])).setName('gridMeta')
+            ])).setParseAction(_assign_ver),
+            Suppress(hs_nl),
+            # Columns row
+            Group(hs_cols["2.0"]),
+            Suppress(hs_nl),
+            # Row data
+            Group(DelimitedList(hs_row["2.0"], delim=hs_nl))
+        ]).setName('subGridV2'),
+        # Project Haystack 3.0 grid
+        And([
+            # Metadata row
+            Group(And([
+                # ver:"2.0"
+                And([hs_gridVerTag + Literal('"3.0"')]).setParseAction(\
+                        lambda *a, **kwa : ['3.0']),
+                # optional metadata tags
+                Optional(And([
+                    Suppress(Literal(' ')),
+                    hs_meta["3.0"]
+                ])).setName('gridMeta')
+            ])).setParseAction(_assign_ver),
+            Suppress(hs_nl),
+            # Columns row
+            Group(hs_cols["3.0"]),
+            Suppress(hs_nl),
+            # Row data
+            Group(DelimitedList(hs_row["3.0"], delim=hs_nl))
+        ]).setName('subGridV3'),
+    ]),
+    Suppress(Literal('>>'))
+])).setParseAction(_parse_subgrid).setName('subGrid')
 
 def parse_grid(grid_data):
     """

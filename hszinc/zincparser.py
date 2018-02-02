@@ -16,7 +16,7 @@ import logging
 import re
 
 # Bring in special Project Haystack types and time zones
-from .datatypes import Quantity, Coordinate, Uri, Bin, MARKER, REMOVE, Ref
+from .datatypes import Quantity, Coordinate, Uri, Bin, MARKER, REMOVE, Ref, XStr
 from .grid import Grid
 from .zoneinfo import timezone
 
@@ -427,6 +427,15 @@ hs_dict         = GenerateMatch(\
 # sub grids here.
 hs_subgrid      = Forward()
 
+# XStr, basically used for enumeration types.
+hs_xstr         = And([
+        Regex(r'[A-Z][a-zA-Z0-9_]*').setName('xstrType'),
+        Suppress(Regex(r'\( *')),
+        hs_str,
+        Suppress(Regex(r' *\)'))
+    ]).setParseAction(lambda toks : XStr(toks[0], toks[1])).setName('xstr')
+
+
 # All possible scalar values, by Haystack version
 hs_scalar_2_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
@@ -434,7 +443,7 @@ hs_scalar_2_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
 hs_scalar_3_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
             hs_date, hs_time, hs_coord, hs_number, hs_null, hs_marker,
             hs_remove, hs_bool, hs_list[VER_3_0],
-            hs_dict[VER_3_0], hs_subgrid]).setName('scalar')
+            hs_dict[VER_3_0], hs_subgrid, hs_xstr]).setName('scalar')
 
 # Grid building blocks
 hs_cell         = GenerateMatch(                                                \
@@ -491,7 +500,6 @@ hs_gridMeta     = GenerateMatch(\
                 hs_meta[ver] \
             ])).setName('gridMeta')
         ]).setParseAction(_assign_ver)) # + hs_nl
-
 
 # So, we can have a grid that's a different version than its parent.
 # This **greatly** increases parsing complexity.  Don't expect miracles here!

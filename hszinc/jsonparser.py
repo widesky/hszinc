@@ -96,6 +96,24 @@ def parse_scalar(scalar, version=LATEST_VER):
                     % version)
         return list(map(functools.partial(parse_scalar, version=version),
             scalar))
+    elif isinstance(scalar, dict):
+        # We support this only in version 3.0 and up.
+        if version < VER_3_0:
+            raise ValueError('Dicts and grids are not supported in '\
+                    'Haystack version %s' % version)
+
+        # This could be either a dict, or a grid.
+        if (set(scalar.keys()) == set(['meta','cols','rows'])) \
+                and isinstance(scalar['meta'], dict) \
+                and isinstance(scalar['cols'], list) \
+                and isinstance(scalar['rows'], list):
+            # This is a grid.
+            return parse_grid(scalar)
+        else:
+            # This is a dict.
+            return dict(map(\
+                    lambda i : (i[0], parse_scalar(i[1], version=version)),
+                    scalar.items()))
     elif scalar == MARKER_STR:
         return MARKER
     elif isinstance(scalar, bool):

@@ -275,8 +275,14 @@ def test_xstr_eq():
     assert not (hszinc.XStr("AType", "AValue")
             == hszinc.XStr("AnotherType", "AValue"))
 
+def test_xstr_eq_notxstr():
+    assert not (hszinc.XStr("AType","AValue") == "AValue")
+
 def test_xstr_ne():
     assert not (hszinc.XStr("AType", "AValue")
             != hszinc.XStr("AType", "AValue"))
     assert hszinc.XStr("AType", "AValue") != hszinc.XStr("AType", "AnotherValue")
     assert hszinc.XStr("AType", "AValue") != hszinc.XStr("AnotherType", "AValue")
+
+def test_xstr_ne_notxstr():
+    assert hszinc.XStr("AType","AValue") != "AValue"

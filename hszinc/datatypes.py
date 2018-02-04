@@ -407,6 +407,13 @@ class XStr(object):
 
         return other.xstr_val == self.xstr_val
 
+    def __ne__(self, other):
+        if not isinstance(other, XStr):
+            return NotImplemented
+
+        # Python 2.7 is too stupid to figure this out.
+        return not (self == other)
+
 
 class Singleton(object):
     def __copy__(self):

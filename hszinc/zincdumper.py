@@ -8,7 +8,9 @@
 from __future__ import unicode_literals
 
 from .datatypes import Quantity, Coordinate, Ref, Bin, Uri, \
-        MARKER, REMOVE, STR_SUB
+        XStr, MARKER, REMOVE, STR_SUB
+from .sortabledict import SortableDict
+from .grid import Grid
 from .zoneinfo import timezone_name
 from .version import LATEST_VER, VER_3_0
 
@@ -96,6 +98,26 @@ def dump_scalar(scalar, version=LATEST_VER):
         return '[%s]' % ','.join(map(
                 functools.partial(dump_scalar, version=version),
                 scalar))
+    elif isinstance(scalar, dict) or isinstance(scalar, SortableDict):
+        if version < VER_3_0:
+            raise ValueError('Project Haystack version %s '\
+                            'does not support dicts'\
+                            % version)
+        return '{%s}' % dump_meta(scalar, version=version)
+    elif isinstance(scalar, XStr):
+        if version < VER_3_0:
+            raise ValueError('Project Haystack version %s '\
+                            'does not support XStr'\
+                            % version)
+        return '%s(%s)' % (scalar.xstr_type, \
+                dump_str(scalar.xstr_val, version=version))
+    elif isinstance(scalar, Grid):
+        if version < VER_3_0:
+            raise ValueError('Project Haystack version %s '\
+                            'does not support embedded grids'\
+                            % version)
+
+        return '<<%s>>' % dump_grid(scalar)
     elif isinstance(scalar, bool):
         return dump_bool(scalar, version=version)
     elif isinstance(scalar, Ref):

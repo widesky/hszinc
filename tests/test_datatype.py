@@ -267,3 +267,16 @@ def test_coord_ne_mycoord():
     mc = MyCoordinate(-33.77, 77.45)
     assert hsc != mc
     assert mc != hsc
+
+def test_xstr_eq():
+    assert hszinc.XStr("AType", "AValue") == hszinc.XStr("AType", "AValue")
+    assert not (hszinc.XStr("AType", "AValue")
+            == hszinc.XStr("AType", "AnotherValue"))
+    assert not (hszinc.XStr("AType", "AValue")
+            == hszinc.XStr("AnotherType", "AValue"))
+
+def test_xstr_ne():
+    assert not (hszinc.XStr("AType", "AValue")
+            != hszinc.XStr("AType", "AValue"))
+    assert hszinc.XStr("AType", "AValue") != hszinc.XStr("AType", "AnotherValue")
+    assert hszinc.XStr("AType", "AValue") != hszinc.XStr("AnotherType", "AValue")

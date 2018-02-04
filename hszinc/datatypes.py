@@ -379,20 +379,24 @@ class Bin(six.text_type):
         return super(Bin, self).__eq__(other)
 
 
-class XStr(six.text_type):
+class XStr(object):
     """
     A class that represents a XStr.
     """
-    def __init__(xstr_type, xstr_val, *args, **kwargs):
-        self._xstr_type = six.text_type(xstr_type, *args, **kwargs)
-        super(XStr, self).__init__(xstr_val, *args, **kwargs)
+    def __init__(self, xstr_type, xstr_val):
+        self._xstr_type = xstr_type
+        self._xstr_val  = xstr_val
 
     @property
     def xstr_type(self):
         return self._xstr_type
 
+    @property
+    def xstr_val(self):
+        return self._xstr_val
+
     def __repr__(self):
-        return '%s(%r, %s)' % (self.xstr_type, super(XStr, self).__repr__())
+        return '%s(%r, %s)' % (self.xstr_type, self.xstr_val)
 
     def __eq__(self, other):
         if not isinstance(other, XStr):
@@ -401,7 +405,7 @@ class XStr(six.text_type):
         if other.xstr_type != self.xstr_type:
             return False
 
-        return super(XStr, self).__eq__(other)
+        return other.xstr_val == self.xstr_val
 
 
 class Singleton(object):

@@ -8,7 +8,9 @@
 from __future__ import unicode_literals
 
 from .datatypes import Quantity, Coordinate, Ref, Bin, Uri, \
-        MARKER
+        XStr, MARKER
+from .sortabledict import SortableDict
+from .grid import Grid
 from .zoneinfo import timezone_name
 from .jsonparser import MARKER_STR
 from .version import LATEST_VER, VER_3_0
@@ -65,6 +67,12 @@ def dump_scalar(scalar, version=LATEST_VER):
         return MARKER_STR
     elif isinstance(scalar, list):
         return dump_list(scalar, version=version)
+    elif isinstance(scalar, dict) or isinstance(scalar, SortableDict):
+        return dump_dict(scalar, version=version)
+    elif isinstance(scalar, Grid):
+        return dump_sub_grid(scalar, version=version)
+    elif isinstance(scalar, XStr):
+        return dump_xstr(scalar, version=version)
     elif isinstance(scalar, bool):
         return dump_bool(scalar, version=version)
     elif isinstance(scalar, Ref):

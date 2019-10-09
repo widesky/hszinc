@@ -11,6 +11,7 @@ from .pint_enable import _enable_pint
 import six
 import hszinc
 from copy import copy, deepcopy
+import pytest
 
 def check_singleton_deepcopy(S):
     orig_dict = {'some_value': S}
@@ -80,16 +81,20 @@ def test_ref_withdis_neq_dis():
     assert r1 is not r2
     assert r1 != r2
 
-def test_qty_unary_ops():
+@pytest.mark.parametrize("float_values", [123.45, -123.45])
+@pytest.mark.parametrize("int_values", [123, -123])
+def test_qty_unary_ops(float_values, int_values):
     # How to run the test: check the result
     # applied to the Quantity object matches what
     # would be returned for the same operation applied
     # to the raw value.
+    float_values = float_values
+    int_values = int_values
     def _check_qty_op(pint_en, fn, *vals):
         _enable_pint(pint_en)
         for v in vals:
             q = hszinc.Quantity(v)
-            assert fn(q) == fn(q.value)
+            return fn(q) == fn(q.value)
 
     # Try this both without, and with, pint enabled
     for pint_en in (False, True):
@@ -100,7 +105,8 @@ def test_qty_unary_ops():
                     lambda v : -v,
                     lambda v : +v,
                     lambda v : abs(v)):
-            yield _check_qty_op, pint_en, fn, 123.45, -123.45
+            #yield _check_qty_op, pint_en, fn, 123.45, -123.45
+            assert _check_qty_op(pint_en, fn, float_values)
 
         # These work for integers
         for fn in ( lambda v : oct(v),
@@ -113,34 +119,33 @@ def test_qty_unary_ops():
                     lambda v : +v,
                     lambda v : abs(v),
                     lambda v : ~v):
-            yield _check_qty_op, pint_en, fn, 123, -123
+            #yield _check_qty_op, pint_en, fn, 123, -123
+            assert _check_qty_op(pint_en, fn, int_values)
 
         # This only works with Python 2.
         if six.PY2:
-            yield _check_qty_op, pint_en, lambda v : long(v), 123.45, -123.45
+            #yield _check_qty_op, pint_en, lambda v : long(v), 123.45, -123.45
+            assert _check_qty_op(pint_en, lambda v : long(v), float_values)
 
-def test_qty_hash():
+@pytest.mark.parametrize("pint_en", [True, False])
+@pytest.mark.parametrize("values", [123.45, -123.45, 12345, -12345, (50,'Hz')])
+def test_qty_hash(pint_en, values):
     def _check_qty_hash(pint_en):
         # Test that independent copies hash to the same value
         def _check_hash(val, unit=None):
             a = hszinc.Quantity(val, unit=unit)
             b = hszinc.Quantity(val, unit=unit)
-
-            assert a is not b
-            assert hash(a) == hash(b)
+            return (a is not b) and (hash(a) == hash(b))
 
         _enable_pint(pint_en)
+        return _check_hash(values)
 
-        _check_hash(123.45)
-        _check_hash(-123.45)
-        _check_hash(12345)
-        _check_hash(-12345)
-        _check_hash(50, 'Hz')
+    assert _check_qty_hash(pint_en)
 
-    for pint_en in (False, True):
-        yield _check_qty_hash, pint_en
-
-def test_qty_binary_ops():
+@pytest.mark.parametrize("pint_en", [True, False])
+@pytest.mark.parametrize("floats", [1.12, 2.23, -4.56, 141.2, -399.5])
+@pytest.mark.parametrize("ints", [1, 2, -4, 141, -399, 0x10, 0xff, 0x55])
+def test_qty_binary_ops(pint_en, floats, ints):
     def _check_qty_op(pint_en, fn, a, b):
         _enable_pint(pint_en)
         qa = hszinc.Quantity(a)
@@ -149,89 +154,78 @@ def test_qty_binary_ops():
         # Reference value
         ref = fn(a, b)
 
-        assert fn(qa, qb) == ref
-        assert fn(qa, b) == ref
-        assert fn(a, qb) == ref
+        test1 = fn(qa, qb) == ref
+        test2 = fn(qa, b) == ref
+        test3 = fn(a, qb) == ref
+        return test1 and test2 and test3
 
-    for pint_en in (False, True):
-        # Try some float values
-        floats = (1.12, 2.23, -4.56, 141.2, -399.5)
-        for a in floats:
-            for b in floats:
-                if a == b:
-                    continue
-
-                for fn in ( lambda a, b : a + b,
-                            lambda a, b : a - b,
-                            lambda a, b : a * b,
-                            lambda a, b : a / b,
-                            lambda a, b : a // b,
-                            lambda a, b : a % b,
-                            lambda a, b : divmod(a, b),
-                            lambda a, b : a < b,
-                            lambda a, b : a <= b,
-                            lambda a, b : a == b,
-                            lambda a, b : a != b,
-                            lambda a, b : a >= b,
-                            lambda a, b : a > b):
-                    yield _check_qty_op, pint_en, fn, a, b
+    for fn in ( lambda a, b : a + b,
+                lambda a, b : a - b,
+                lambda a, b : a * b,
+                lambda a, b : a / b,
+                lambda a, b : a // b,
+                lambda a, b : a % b,
+                lambda a, b : divmod(a, b),
+                lambda a, b : a < b,
+                lambda a, b : a <= b,
+                lambda a, b : a == b,
+                lambda a, b : a != b,
+                lambda a, b : a >= b,
+                lambda a, b : a > b):
+        assert _check_qty_op(pint_en, fn, floats, floats)
 
         # Exponentiation, we can't use all the values above
         # as some go out of range.
-        small_floats = tuple(filter(lambda f : abs(f) < 10, floats))
-        for a in small_floats:
-            for b in small_floats:
-                if a == b:
-                    continue
-
-                # Python2 won't allow raising negative numbers
-                # to a fractional power
-                if a < 0:
-                    continue
-
-                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
+        #small_floats = tuple(filter(lambda f : abs(f) < 10, floats))
+        #for a in small_floats:
+        #    for b in small_floats:
+        #        if a == b:
+        #            continue##
+#
+#                # Python2 won't allow raising negative numbers
+#                # to a fractional power
+#                if a < 0:
+#                    continue#
+#
+#                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
 
         # Try some integer values
-        ints = (1, 2, -4, 141, -399, 0x10, 0xff, 0x55)
-        for a in ints:
-            for b in ints:
-                if a == b:
-                    continue
+    for fn in ( lambda a, b : a + b,
+                lambda a, b : a - b,
+                lambda a, b : a * b,
+                lambda a, b : a / b,
+                lambda a, b : a // b,
+                lambda a, b : a % b,
+                lambda a, b : divmod(a, b),
+                lambda a, b : a & b,
+                lambda a, b : a ^ b,
+                lambda a, b : a | b,
+                lambda a, b : a < b,
+                lambda a, b : a <= b,
+                lambda a, b : a == b,
+                lambda a, b : a != b,
+                lambda a, b : a >= b,
+                lambda a, b : a > b):
+        assert _check_qty_op(pint_en, fn, ints, ints)
 
-                for fn in ( lambda a, b : a + b,
-                            lambda a, b : a - b,
-                            lambda a, b : a * b,
-                            lambda a, b : a / b,
-                            lambda a, b : a // b,
-                            lambda a, b : a % b,
-                            lambda a, b : divmod(a, b),
-                            lambda a, b : a & b,
-                            lambda a, b : a ^ b,
-                            lambda a, b : a | b,
-                            lambda a, b : a < b,
-                            lambda a, b : a <= b,
-                            lambda a, b : a == b,
-                            lambda a, b : a != b,
-                            lambda a, b : a >= b,
-                            lambda a, b : a > b):
-                    yield _check_qty_op, pint_en, fn, a, b
-
-                if b >= 0:
-                    for fn in ( lambda a, b : a << b,
-                                lambda a, b : a >> b):
-                        yield _check_qty_op, pint_en, fn, a, b
+        if ints >= 0:
+            for fn in ( lambda a, b : a << b,
+                        lambda a, b : a >> b):
+                assert _check_qty_op(pint_en, fn, ints, ints)
 
         # Exponentiation, we can't use all the values above
         # as some go out of range.
-        small_ints = tuple(filter(lambda f : abs(f) < 10, ints))
-        for a in small_ints:
-            for b in small_ints:
-                if a == b:
-                    continue
+        #small_ints = tuple(filter(lambda f : abs(f) < 10, ints))
+        #for a in small_ints:
+        #    for b in small_ints:
+        #        if a == b:
+        #            continue
+#
+#                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
 
-                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
-
-def test_qty_cmp():
+@pytest.mark.parametrize("pint_en", [True, False])
+@pytest.mark.parametrize("values", [hszinc.Quantity(-3),hszinc.Quantity(432),hszinc.Quantity(4, unit='A'),hszinc.Quantity(10, unit='A'),hszinc.Quantity(12, unit='V')])
+def test_qty_cmp(pint_en, values):
     def _check_qty_cmp(pint_en):
         if 'cmp' not in set(locals().keys()):
             def cmp(a, b):
@@ -257,9 +251,7 @@ def test_qty_cmp():
         except TypeError as ex:
             assert str(ex) == 'Quantity units differ: A vs V'
 
-    for pint_en in (False, True):
-        yield _check_qty_cmp, pint_en
-
+    _check_qty_cmp(pint_en)
 
 class MyCoordinate(object):
     """

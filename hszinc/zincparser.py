@@ -339,7 +339,7 @@ hs_number       = Or([
         Literal('INF'),
         Literal('-INF'),
         Literal('NaN')
-    ]).setParseAction(lambda toks : [float(toks[0])])
+    ]).setParseAction(lambda toks : [Quantity(float(toks[0]), unit=None)])
 ])
 
 # URIs

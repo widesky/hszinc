@@ -100,11 +100,11 @@ def parse_scalar(scalar, version=LATEST_VER):
     elif isinstance(scalar, bool):
         return scalar
     elif scalar == 'n:INF':
-        return float('INF')
+        return Quantity(float('INF'), unit=None)
     elif scalar == 'n:-INF':
-        return -float('INF')
+        return Quantity(-float('INF'), unit=None)
     elif scalar == 'n:NaN':
-        return float('nan')
+        return Quantity(float('nan'), unit=None)
     # Conversion to dict of float value turn them into float 
     # so regex won't work... better just return them
     elif isinstance(scalar, float) or isinstance(scalar, six.integer_types):

@@ -124,7 +124,7 @@ class Version(object):
         return self._cmp(other) > 0
 
     @classmethod
-    def nearest(self, ver):
+    def nearest(cls, ver):
         """
         Retrieve the official version nearest the one given.
         """

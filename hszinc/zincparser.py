@@ -426,10 +426,28 @@ hs_scalar_3_0 <<= Or([hs_ref, hs_bin, hs_str, hs_uri, hs_dateTime,
 # Tag IDs
 hs_id           = Regex(r'[a-z][a-zA-Z0-9_]*').setName('id')
 
+hs_tag_marker = Regex(r'[a-z][a-zA-Z0-9_]*').setParseAction(lambda toks: tuple([toks[0],toks[0]])).setName('tagMarker')
+hs_val   = Forward()
+hs_tag_pair = And([hs_id, 
+                   Suppress(Literal(':')), 
+                   hs_str]
+              ).setParseAction(lambda toks: tuple([toks[0], toks[1]]) ).setName('tagPair')
+hs_tag = Or([
+             hs_tag_pair, hs_tag_marker
+         ]).setParseAction(lambda toks: toks[0])
+hs_dict = And([ 
+                    Suppress(Literal('{')),
+                    ZeroOrMore(And([hs_tag, Suppress(Optional(OneOrMore(Literal(' '))))])),
+                    Suppress(Literal('}'))
+        ]).setParseAction(lambda toks: [ {k: v for k,v in toks} ]).setName('dict')
+
+hs_val = Or([hs_scalar[VER_3_0], hs_list[VER_3_0], hs_dict]).setName('val')
+
+
 # Grid building blocks
 hs_cell         = GenerateMatch(                                                \
         lambda ver : Or([Empty().copy().setParseAction(lambda toks : [None]),   \
-                        hs_scalar[ver]]).setName('cell'))
+                        hs_val]).setName('cell'))
 hs_nl           = Combine(And([Optional(Literal('\r')), Literal('\n')]))
 
 hs_row          = GenerateMatch(\

@@ -57,6 +57,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# Pycharm
+.idea
+
 # vi swapfiles
 .*.sw?
 *.sw?

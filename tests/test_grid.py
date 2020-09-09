@@ -104,7 +104,7 @@ def test_grid_append_v2_list_fail():
 
 
 def test_grid_append_nover_list():
-    g = Grid()
+    g = Grid(version=None)
     assert g.version == Version('2.0')
     g.column['test'] = {}
 
@@ -370,3 +370,9 @@ def test_slice():
     assert len(result) == 2
     assert result['id1']
     assert result['id2']
+
+
+def test_grid_with_sequence():
+    grid = Grid(columns=["id", "site"])
+    assert grid.column["id"] == {}
+    assert grid.column["site"] == {}

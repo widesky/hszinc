@@ -8,11 +8,11 @@
 from __future__ import unicode_literals
 
 import binascii
-import locale
 import random
 from copy import copy, deepcopy
 
 import six
+from nose.tools import eq_
 
 import hszinc
 from hszinc.datatypes import XStr, Uri, Bin, MARKER, NA, REMOVE
@@ -382,12 +382,12 @@ def test_coord_hash():
 
 def test_coord_default_method():
     coord = hszinc.Coordinate(latitude=33.77, longitude=-77.45)
-    assert repr(coord) == 'Coordinate(33.77, -77.45)'
+    ref_str = u'33.770000° lat -77.450000° long'
     if six.PY2:
-        assert str(coord) == u'33.770000° lat -77.450000° long'.encode(
-                locale.getpreferredencoding())
-    else:
-        assert str(coord) == u'33.770000° lat -77.450000° long'
+        ref_str = ref_str.encode('utf-8')
+
+    eq_(repr(coord), 'Coordinate(33.77, -77.45)')
+    eq_(str(coord), ref_str)
 
 
 def test_xstr_hex():
@@ -447,6 +447,7 @@ def test_to_haystack():
     assert to_haystack('/h') == u''
     assert to_haystack(u'foot ** 3') == u'cubic_foot'
     assert to_haystack(u'deg') == u'\N{DEGREE SIGN}'
+
 
 def test_to_pint():
     assert to_pint(u'\N{DEGREE SIGN}') == 'deg'

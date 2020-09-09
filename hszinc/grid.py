@@ -6,8 +6,7 @@
 # vim: set ts=4 sts=4 et tw=78 sw=4 si:
 import datetime
 import numbers
-
-import six
+from collections import Sequence
 
 from .datatypes import NA, Quantity, Coordinate
 from .metadata import MetadataObject
@@ -58,6 +57,9 @@ class Grid(col.MutableSequence):
         if columns is not None:
             if isinstance(columns, dict) or isinstance(columns, SortableDict):
                 columns = list(columns.items())
+            elif isinstance(columns, Sequence):
+                if len(columns) and not isinstance(columns[0], tuple):
+                    columns = list(zip(columns, [{}] * len(columns)))
 
             for col_id, col_meta in columns:
                 # Convert sorted lists and dicts back to a list of items.
@@ -176,9 +178,9 @@ class Grid(col.MutableSequence):
         Retrieve the row at index.
         '''
         if isinstance(key, slice):
-            result=Grid(version=self.version,metadata=self.metadata,columns=self.column)
-            result._row=self._row[key]
-            result._index=None
+            result = Grid(version=self.version, metadata=self.metadata, columns=self.column)
+            result._row = self._row[key]
+            result._index = None
             return result
         elif isinstance(key, numbers.Number):
             return self._row[key]
@@ -247,9 +249,10 @@ class Grid(col.MutableSequence):
     def extend(self, values):
         super(Grid, self).extend(values)  # Python 2 compatible :-(
         # super().extend(values)  # Python 3+ :-)
-        for item in self._row:
-            if "id" in item:
-                self._index[str(item["id"])] = item
+        if self._index:
+            for item in self._row:
+                if "id" in item:
+                    self._index[str(item["id"])] = item
 
     def filter(self, filter, limit=0):
         '''
@@ -262,7 +265,7 @@ class Grid(col.MutableSequence):
                 return self
             else:
                 result = Grid(version=self.version, metadata=self.metadata, columns=self.column)
-                result.extend(self.__getitem__(slice(0,limit)))
+                result.extend(self.__getitem__(slice(0, limit)))
                 return result
 
         result = Grid(version=self.version, metadata=self.metadata, columns=self.column)
@@ -270,7 +273,7 @@ class Grid(col.MutableSequence):
         for row in self._row:
             if fn(self, row):
                 result.append(row)
-            if limit and len(result)==limit:
+            if limit and len(result) == limit:
                 break
         return result
 

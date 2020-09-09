@@ -348,8 +348,8 @@ class Coordinate(object):
         if six.PY2:  # pragma: no cover
             return u'%f\N{DEGREE SIGN} lat %f\N{DEGREE SIGN} long'.encode(
                 locale.getpreferredencoding()) % (
-                round(self.latitude, ndigits=6), round(self.longitude, ndigits=6)
-            )
+                       round(self.latitude, ndigits=6), round(self.longitude, ndigits=6)
+                   )
         else:
             return (u'%f\N{DEGREE SIGN} lat %f\N{DEGREE SIGN} long' % (
                 round(self.latitude, ndigits=6), round(self.longitude, ndigits=6)

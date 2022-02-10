@@ -30,7 +30,7 @@ VERSION_RE = re.compile(r'^ver:"(([^"\\]|\\[\\"bfnrt$])+)"')
 NEWLINE_RE = re.compile(r'\r?\n')
 
 # Character number regex; for exceptions
-CHAR_NUM_RE = re.compile(' *\(at char \d+\),')
+CHAR_NUM_RE = re.compile(r' *\(at char \d+\),')
 
 
 def reformat_exception(ex_msg, line_num=None):

@@ -658,9 +658,10 @@ def parse_grid(grid_data, parseAll=True):
             'Failed to parse: %s' % reformat_exception(pe, pe.lineno),
             grid_data, pe.lineno, pe.col)
     except:
-        LOG.debug('Failing grid: %r', grid_data)
+        LOG.debug('Failing grid: %r', grid_data, exc_info=1)
+        (_, exc, _) = sys.exc_info()
         raise ZincParseException(
-            'Failed to parse: %s' % sys.exc_info()[0], grid_data, 0, 0)
+            'Failed to parse: %s' % exc, grid_data, 0, 0)
 
 
 def parse_scalar(scalar_data, version):

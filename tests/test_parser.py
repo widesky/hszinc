@@ -1078,8 +1078,7 @@ def _check_list_json_v2(pint_en):
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])
 def test_dict(with_pint):
-    yield _check_dict, False
-    yield _check_dict, True
+    _check_dict(with_pint)
 
 def _check_dict(pint_en):
     _enable_pint(pint_en)
@@ -1106,8 +1105,7 @@ ix,dict,                                                       dis
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])
 def test_dict_json(with_pint):
-    yield _check_dict_json, False
-    yield _check_dict_json, True
+    _check_dict_json(with_pint)
 
 def _check_dict_json(pint_en):
     _enable_pint(pint_en)
@@ -1136,8 +1134,9 @@ def _check_dict_json(pint_en):
     assert grid[4]['dict'] == {'marker': MARKER, 'tag': [1.0, 2.0]}
     assert grid[5]['dict'] == {'tag': {'marker': MARKER}}
 
-def test_dict_invalide_version():
-    def _check_dict_invalide_version(pint_en):
+@pytest.mark.parametrize("with_pint", [(False,), (True,)])
+def test_dict_invalid_version(with_pint):
+    def _check_dict_invalid_version(pint_en):
         _enable_pint(pint_en)
         try:
             hszinc.parse('''ver:"2.0"
@@ -1147,10 +1146,9 @@ def test_dict_invalide_version():
             assert False
         except ZincParseException as e:
             pass
-    yield _check_dict_invalide_version, False
-    yield _check_dict_invalide_version, True
+    _check_dict_invalid_version(with_pint)
 
-def test_dump_invalide_scalar():
+def test_dump_invalid_scalar():
     assert dump_scalar(None)
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])
@@ -1171,8 +1169,7 @@ Bin(text/plain)
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])
 def test_dict(with_pint):
-    yield _check_dict, False
-    yield _check_dict, True
+    _check_dict(with_pint)
 
 def _check_dict(pint_en):
     _enable_pint(pint_en)
@@ -1199,8 +1196,7 @@ ix,dict,                                                       dis
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])
 def test_dict_json(with_pint):
-    yield _check_dict_json, False
-    yield _check_dict_json, True
+    _check_dict_json(with_pint)
 
 def _check_dict_json(pint_en):
     _enable_pint(pint_en)
@@ -1245,7 +1241,8 @@ Bin(text/plain)
     assert len(grid) == 1
     assert grid[0]['bin'] == hszinc.Bin('text/plain')
 
-def test_xstr_hex():
+@pytest.mark.parametrize("with_pint", [(False,), (True,)])
+def test_xstr_hex(with_pint):
     def _check_xstr(pint_en):
         _enable_pint(pint_en)
         grid = hszinc.parse('''ver:"3.0"
@@ -1254,11 +1251,11 @@ hex("deadbeef")
 ''', single=True)
         assert len(grid) == 1
         assert grid[0]['bin'].data == b'\xde\xad\xbe\xef'
-    yield _check_xstr, False
-    yield _check_xstr, True
+    _check_xstr(with_pint)
 
 
-def test_xstr_b64():
+@pytest.mark.parametrize("with_pint", [(False,), (True,)])
+def test_xstr_b64(with_pint):
     def _check_xstr(pint_en):
         _enable_pint(pint_en)
         grid = hszinc.parse('''ver:"3.0"
@@ -1267,11 +1264,11 @@ b64("3q2+7w==")
 ''', single=True)
         assert len(grid) == 1
         assert grid[0]['bin'].data == b'\xde\xad\xbe\xef'
-    yield _check_xstr, False
-    yield _check_xstr, True
+    _check_xstr(with_pint)
 
 
-def test_xstr_hex_json():
+@pytest.mark.parametrize("with_pint", [(False,), (True,)])
+def test_xstr_hex_json(with_pint):
     def _check_xstr(pint_en):
         _enable_pint(pint_en)
         grid = hszinc.parse({
@@ -1285,11 +1282,11 @@ def test_xstr_hex_json():
     }, mode=MODE_JSON, single=True)
         assert len(grid) == 1
         assert grid[0]['bin'].data == b'\xde\xad\xbe\xef'
-    yield _check_xstr, False
-    yield _check_xstr, True
+    _check_xstr(with_pint)
 
 
-def test_xstr_b64_json():
+@pytest.mark.parametrize("with_pint", [(False,), (True,)])
+def test_xstr_b64_json(with_pint):
     def _check_xstr(pint_en):
         _enable_pint(pint_en)
         grid = hszinc.parse({
@@ -1303,8 +1300,7 @@ def test_xstr_b64_json():
     }, mode=MODE_JSON, single=True)
         assert len(grid) == 1
         assert grid[0]['bin'].data == b'\xde\xad\xbe\xef'
-    yield _check_xstr, False
-    yield _check_xstr, True
+    _check_xstr(with_pint)
 
 
 @pytest.mark.parametrize("with_pint", [(False,), (True,)])

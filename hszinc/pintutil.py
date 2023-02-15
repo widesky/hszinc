@@ -22,6 +22,8 @@ HAYSTACK_CONVERSION = [
                     (u'grams', 'gram'),
                     (u'tons refrigeration', 'refrigeration_ton'),
                     (u'%', 'percent'),
+                    (u'%obsc', u'percent_obscuration'),
+                    (u'%RH', 'percent_relative_humidity'),
                     (u'degree kelvin','degK'),
                     (u'degree celsius','degC'),
                     (u'degree farenheit','degF'),
@@ -172,13 +174,12 @@ def define_haystack_units():
     Added to the registry
     """
     ureg = UnitRegistry(on_redefinition='ignore')
-    ureg.define(u'% = [] = percent')
     ureg.define(u'pixel = [] = px = dot = picture_element = pel')
     ureg.define(u'decibel = [] = dB')
     ureg.define(u'ppu = [] = parts_per_unit')
     ureg.define(u'ppm = [] = parts_per_million')
     ureg.define(u'ppb = [] = parts_per_billion')
-    ureg.define(u'%RH = [] = percent_relative_humidity = percentRH')
+    ureg.define(u'percent_relative_humidity = [] = percentRH')
     ureg.define(u'cubic_feet = ft ** 3 = cu_ft')
     ureg.define(u'cfm = cu_ft * minute = liter_per_second / 0.4719475')
     ureg.define(u'cfh = cu_ft * hour')
@@ -200,7 +201,7 @@ def define_haystack_units():
     ureg.define(u'degree_day_farenheit = degree_day_celsius * 9 / 5 = degdaysF')
     ureg.define(u'footcandle = lumen / sq_ft = ftcd')
     ureg.define(u'Nm = newton * meter')
-    ureg.define(u'%obsc = [] = percent_obscuration = percentobsc')
+    ureg.define(u'percent_obscuration = [] = percentobsc')
     ureg.define(u'cycle = []')
     ureg.define(u'cph = cycle / hour')
     ureg.define(u'cpm = cycle / minute')

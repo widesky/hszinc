@@ -229,8 +229,10 @@ SMALL_FLOATS = tuple(filter(lambda f: abs(f) < 10, FLOATS))
             for pint_en in (False, True) \
             for (a, b) in [
                 # Cross product of all SMALL_FLOATS elements, except those
-                # that match
-                (a, b) for a in SMALL_FLOATS for b in SMALL_FLOATS if a != b
+                # that match.  Python 2.7 can't raise negative numbers to
+                # fractional exponents.
+                (a, b) for a in SMALL_FLOATS for b in SMALL_FLOATS \
+                        if (a != b) and ((not six.PY2) or (a > 0))
             ]
 ])
 def test_qty_float_exp(pint_en, a, b):

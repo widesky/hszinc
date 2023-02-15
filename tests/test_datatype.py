@@ -267,7 +267,7 @@ INTS = (1, 2, -4, 141, -399, 0x10, 0xff, 0x55)
                 lambda a, b: a == b,
                 lambda a, b: a != b,
                 lambda a, b: a >= b,
-                lambda a, b: a > b
+                lambda a, b: a > b,
             ) \
             for (a, b) in [
                 # Cross product of all INTS elements, except those that
@@ -276,6 +276,32 @@ INTS = (1, 2, -4, 141, -399, 0x10, 0xff, 0x55)
             ]
 ])
 def test_qty_int_binary_op(pint_en, fn, a, b):
+    _enable_pint(pint_en)
+    qa = hszinc.Quantity(a)
+    qb = hszinc.Quantity(b)
+
+    # Reference value
+    ref = fn(a, b)
+
+    assert fn(qa, qb) == ref
+    assert fn(qa, b) == ref
+    assert fn(a, qb) == ref
+
+POS_INTS = (1, 2, 141, 0x10, 0xff, 0x55)
+@pytest.mark.parametrize("pint_en,fn,a,b", [
+    (pint_en, fn, a, b) \
+            for pint_en in (False, True) \
+            for fn in (
+                lambda a, b: a << b,
+                lambda a, b: a >> b,
+            ) \
+            for (a, b) in [
+                # Cross product of all POS_INTS elements, except those that
+                # match
+                (a, b) for a in POS_INTS for b in POS_INTS if a != b
+            ]
+])
+def test_qty_int_shift_op(pint_en, fn, a, b):
     _enable_pint(pint_en)
     qa = hszinc.Quantity(a)
     qb = hszinc.Quantity(b)

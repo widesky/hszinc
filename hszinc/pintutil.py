@@ -174,6 +174,7 @@ def define_haystack_units():
     Added to the registry
     """
     ureg = UnitRegistry(on_redefinition='ignore')
+    ureg.define(u'percent = []')
     ureg.define(u'pixel = [] = px = dot = picture_element = pel')
     ureg.define(u'decibel = [] = dB')
     ureg.define(u'ppu = [] = parts_per_unit')
@@ -215,7 +216,7 @@ def define_haystack_units():
     # no need to use : watts_per_square_meter_irradiance
     
     # CURRENCY
-    # I know...we won'T be able to convert right now !
+    # I know...we won't be able to convert right now !
     ureg.define(u'australian_dollar = [] = AUD')
     ureg.define(u'british_pound = [] = GBP = £')
     ureg.define(u'canadian_dollar = [] = CAD')

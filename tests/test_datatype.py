@@ -18,6 +18,10 @@ from hszinc.datatypes import XStr, Uri, Bin, MARKER, NA, REMOVE
 from hszinc.pintutil import to_haystack, to_pint
 from .pint_enable import _enable_pint
 
+if not six.PY2:  # pragma: no cover
+    # We don't use this alias, but flake8 will moan if we don't define it!
+    long = int
+
 from nose.tools import eq_
 
 

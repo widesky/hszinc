@@ -23,8 +23,6 @@ if not six.PY2:  # pragma: no cover
     # We don't use this alias, but flake8 will moan if we don't define it!
     long = int
 
-from nose.tools import eq_
-
 
 def check_singleton_deepcopy(S):
     orig_dict = {'some_value': S}

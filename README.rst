@@ -1,8 +1,6 @@
 HSZinc
 ======
 
-.. image:: https://travis-ci.org/widesky/hszinc.svg?branch=master
-    :target: https://travis-ci.org/widesky/hszinc
 .. image:: https://coveralls.io/repos/widesky/hszinc/badge.svg?branch=master&service=github
     :target: https://coveralls.io/github/widesky/hszinc?branch=master
 

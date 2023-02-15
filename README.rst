@@ -1,6 +1,8 @@
 HSZinc
 ======
 
+.. image:: https://github.com/widesky/hszinc/actions/workflows/python-3.10.yml/badge.svg
+    :target: https://github.com/widesky/hszinc/actions/workflows/python-3.10.yml
 .. image:: https://coveralls.io/repos/widesky/hszinc/badge.svg?branch=master&service=github
     :target: https://coveralls.io/github/widesky/hszinc?branch=master
 

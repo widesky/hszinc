@@ -40,8 +40,8 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
-coverage.xml
+htmlcov/
+*.xml
 *,cover
 
 # Translations

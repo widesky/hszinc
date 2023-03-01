@@ -28,6 +28,10 @@ STR_SUB = [
 # Will keep in memory the way we want Quantity being created
 MODE_PINT = False
 
+if not six.PY2:  # pragma: no cover
+    # We don't use this alias, but flake8 will moan if we don't define it!
+    long = int
+
 
 def use_pint(val=True):
     global MODE_PINT

@@ -18,9 +18,9 @@ except ImportError:
         '`pint` was not available for import.  Tests requiring `pint` will '
         'be skipped.', exc_info=1)
 
-    from nose import SkipTest
+    from pytest import skip
     def _enable_pint(pint_en):
         if pint_en:
-            raise SkipTest('pint not available')
+            skip('pint not available')
     def to_pint(*a, **kwa):
-        raise SkipTest('pint not available')
+        skip('pint not available')

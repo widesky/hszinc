@@ -12,13 +12,16 @@ import random
 from copy import copy, deepcopy
 
 import six
+import pytest
 
 import hszinc
 from hszinc.datatypes import XStr, Uri, Bin, MARKER, NA, REMOVE
 from hszinc.pintutil import to_haystack, to_pint
 from .pint_enable import _enable_pint
 
-from nose.tools import eq_
+if not six.PY2:  # pragma: no cover
+    # We don't use this alias, but flake8 will moan if we don't define it!
+    long = int
 
 
 def check_singleton_deepcopy(S):
@@ -122,202 +125,230 @@ def test_ref_std_method():
     else:
         assert str(hszinc.Ref(name='a.ref', value='display text')) == '@a.ref \'display text\''
 
+@pytest.mark.parametrize("pint_en,fn,value", [
+    (pint_en, fn, value) \
+            for pint_en in (False, True) \
+            for fn in (
+                lambda v: oct(v),
+                lambda v: hex(v),
+                lambda v: v.__index__(),
+                lambda v: int(v),
+                lambda v: long(v),
+                lambda v: complex(v),
+                lambda v: float(v),
+                lambda v: -v,
+                lambda v: +v,
+                lambda v: abs(v),
+                lambda v: ~v
+            )
+            for value in (123, -123)
+])
+def test_qty_unary_int_op(pint_en, fn, value):
+    _enable_pint(pint_en)
+    q = hszinc.Quantity(value)
+    assert fn(q) == fn(q.value)
 
-def test_qty_unary_ops():
-    # How to run the test: check the result
-    # applied to the Quantity object matches what
-    # would be returned for the same operation applied
-    # to the raw value.
-    def _check_qty_op(pint_en, fn, *vals):
-        _enable_pint(pint_en)
-        for v in vals:
-            q = hszinc.Quantity(v)
-            assert fn(q) == fn(q.value)
-
-    # Try this both without, and with, pint enabled
-    for pint_en in (False, True):
-        # These work for floats
-        for fn in (lambda v: int(v),
-                   lambda v: complex(v),
-                   lambda v: float(v),
-                   lambda v: -v,
-                   lambda v: +v,
-                   lambda v: abs(v)):
-            yield _check_qty_op, pint_en, fn, 123.45, -123.45
-
-        # These work for integers
-        for fn in (lambda v: oct(v),
-                   lambda v: hex(v),
-                   lambda v: v.__index__(),
-                   lambda v: int(v),
-                   lambda v: complex(v),
-                   lambda v: float(v),
-                   lambda v: -v,
-                   lambda v: +v,
-                   lambda v: abs(v),
-                   lambda v: ~v):
-            yield _check_qty_op, pint_en, fn, 123, -123
-
-        # This only works with Python 2.
-        if six.PY2:  # pragma: no cover
-            yield _check_qty_op, pint_en, lambda v: long(v), 123.45, -123.45
-
-
-def test_qty_hash():
-    def _check_qty_hash(pint_en):
-        # Test that independent copies hash to the same value
-        def _check_hash(val, unit=None):
-            a = hszinc.Quantity(val, unit=unit)
-            b = hszinc.Quantity(val, unit=unit)
-
-            assert a is not b
-            assert hash(a) == hash(b)
-
-        _enable_pint(pint_en)
-
-        _check_hash(123.45)
-        _check_hash(-123.45)
-        _check_hash(12345)
-        _check_hash(-12345)
-        _check_hash(50, 'Hz')
-
-    for pint_en in (False, True):
-        yield _check_qty_hash, pint_en
+@pytest.mark.parametrize("pint_en,fn,value", [
+    (pint_en, fn, value) \
+            for pint_en in (False, True) \
+            for fn in (
+                lambda v: int(v),
+                lambda v: complex(v),
+                lambda v: float(v),
+                lambda v: -v,
+                lambda v: +v,
+                lambda v: abs(v)
+            ) \
+            for value in (123.45, -123.45)
+])
+def test_qty_unary_float_op(pint_en, fn, value):
+    _enable_pint(pint_en)
+    q = hszinc.Quantity(value)
+    assert fn(q) == fn(q.value)
 
 
-def test_qty_binary_ops():
-    def _check_qty_op(pint_en, fn, a, b):
-        _enable_pint(pint_en)
-        qa = hszinc.Quantity(a)
-        qb = hszinc.Quantity(b)
+@pytest.mark.parametrize("pint_en,value,unit", [
+    (pint_en, value, unit)
+    for pint_en in (False, True)
+    for (value, unit) in (
+        (123.45, None),
+        (-123.45, None),
+        (12345, None),
+        (-12345, None),
+        (50, 'Hz')
+    )
+])
+def test_qty_hash(pint_en, value, unit):
+    _enable_pint(pint_en)
+    a = hszinc.Quantity(value, unit=unit)
+    b = hszinc.Quantity(value, unit=unit)
 
-        # Reference value
-        ref = fn(a, b)
+    assert a is not b
+    assert hash(a) == hash(b)
 
-        assert fn(qa, qb) == ref
-        assert fn(qa, b) == ref
-        assert fn(a, qb) == ref
+FLOATS = (1.12, 2.23, -4.56, 141.2, -399.5)
+@pytest.mark.parametrize("pint_en,fn,a,b", [
+    (pint_en, fn, a, b) \
+            for pint_en in (False, True) \
+            for fn in (lambda a, b: a + b,
+                lambda a, b: a - b,
+                lambda a, b: a * b,
+                lambda a, b: a / b,
+                lambda a, b: a // b,
+                lambda a, b: a % b,
+                lambda a, b: divmod(a, b),
+                lambda a, b: a < b,
+                lambda a, b: a <= b,
+                lambda a, b: a == b,
+                lambda a, b: a != b,
+                lambda a, b: a >= b,
+                lambda a, b: a > b) \
+            for (a, b) in [
+                # Cross product of all FLOATS elements, except those that
+                # match
+                (a, b) for a in FLOATS for b in FLOATS if a != b
+            ]
+])
+def test_qty_float_binary_op(pint_en, fn, a, b):
+    _enable_pint(pint_en)
+    qa = hszinc.Quantity(a)
+    qb = hszinc.Quantity(b)
 
-    for pint_en in (False, True):
-        # Try some float values
-        floats = (1.12, 2.23, -4.56, 141.2, -399.5)
-        for a in floats:
-            for b in floats:
-                if a == b:
-                    continue
+    # Reference value
+    ref = fn(a, b)
 
-                for fn in (lambda a, b: a + b,
-                           lambda a, b: a - b,
-                           lambda a, b: a * b,
-                           lambda a, b: a / b,
-                           lambda a, b: a // b,
-                           lambda a, b: a % b,
-                           lambda a, b: divmod(a, b),
-                           lambda a, b: a < b,
-                           lambda a, b: a <= b,
-                           lambda a, b: a == b,
-                           lambda a, b: a != b,
-                           lambda a, b: a >= b,
-                           lambda a, b: a > b):
-                    yield _check_qty_op, pint_en, fn, a, b
+    assert fn(qa, qb) == ref
+    assert fn(qa, b) == ref
+    assert fn(a, qb) == ref
 
-        # Exponentiation, we can't use all the values above
-        # as some go out of dates_range.
-        small_floats = tuple(filter(lambda f: abs(f) < 10, floats))
-        for a in small_floats:
-            for b in small_floats:
-                if a == b:
-                    continue
+# Exponentiation, we can't use all the values above
+# as some go out of dates_range.
+SMALL_FLOATS = tuple(filter(lambda f: abs(f) < 10, FLOATS))
+@pytest.mark.parametrize("pint_en,a,b", [
+    (pint_en, a, b) \
+            for pint_en in (False, True) \
+            for (a, b) in [
+                # Cross product of all SMALL_FLOATS elements, except those
+                # that match.  Python 2.7 can't raise negative numbers to
+                # fractional exponents.
+                (a, b) for a in SMALL_FLOATS for b in SMALL_FLOATS \
+                        if (a != b) and ((not six.PY2) or (a > 0))
+            ]
+])
+def test_qty_float_exp(pint_en, a, b):
+    _enable_pint(pint_en)
+    qa = hszinc.Quantity(a)
+    qb = hszinc.Quantity(b)
 
-                # Python2 won't allow raising negative numbers
-                # to a fractional power
-                if a < 0:
-                    continue
+    # Reference value
+    ref = a ** b
 
-                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
+    assert qa ** qb == ref
+    assert qa ** b == ref
+    assert a ** qb == ref
 
-        # Try some integer values
-        ints = (1, 2, -4, 141, -399, 0x10, 0xff, 0x55)
-        for a in ints:
-            for b in ints:
-                if a == b:
-                    continue
+INTS = (1, 2, -4, 141, -399, 0x10, 0xff, 0x55)
+@pytest.mark.parametrize("pint_en,fn,a,b", [
+    (pint_en, fn, a, b) \
+            for pint_en in (False, True) \
+            for fn in (
+                lambda a, b: a + b,
+                lambda a, b: a - b,
+                lambda a, b: a * b,
+                lambda a, b: a / b,
+                lambda a, b: a // b,
+                lambda a, b: a % b,
+                lambda a, b: divmod(a, b),
+                lambda a, b: a & b,
+                lambda a, b: a ^ b,
+                lambda a, b: a | b,
+                lambda a, b: a < b,
+                lambda a, b: a <= b,
+                lambda a, b: a == b,
+                lambda a, b: a != b,
+                lambda a, b: a >= b,
+                lambda a, b: a > b,
+            ) \
+            for (a, b) in [
+                # Cross product of all INTS elements, except those that
+                # match
+                (a, b) for a in INTS for b in INTS if a != b
+            ]
+])
+def test_qty_int_binary_op(pint_en, fn, a, b):
+    _enable_pint(pint_en)
+    qa = hszinc.Quantity(a)
+    qb = hszinc.Quantity(b)
 
-                for fn in (lambda a, b: a + b,
-                           lambda a, b: a - b,
-                           lambda a, b: a * b,
-                           lambda a, b: a / b,
-                           lambda a, b: a // b,
-                           lambda a, b: a % b,
-                           lambda a, b: divmod(a, b),
-                           lambda a, b: a & b,
-                           lambda a, b: a ^ b,
-                           lambda a, b: a | b,
-                           lambda a, b: a < b,
-                           lambda a, b: a <= b,
-                           lambda a, b: a == b,
-                           lambda a, b: a != b,
-                           lambda a, b: a >= b,
-                           lambda a, b: a > b):
-                    yield _check_qty_op, pint_en, fn, a, b
+    # Reference value
+    ref = fn(a, b)
 
-                if b >= 0:
-                    for fn in (lambda a, b: a << b,
-                               lambda a, b: a >> b):
-                        yield _check_qty_op, pint_en, fn, a, b
+    assert fn(qa, qb) == ref
+    assert fn(qa, b) == ref
+    assert fn(a, qb) == ref
 
-        # Exponentiation, we can't use all the values above
-        # as some go out of dates_range.
-        small_ints = tuple(filter(lambda f: abs(f) < 10, ints))
-        for a in small_ints:
-            for b in small_ints:
-                if a == b:
-                    continue
+POS_INTS = (1, 2, 141, 0x10, 0xff, 0x55)
+@pytest.mark.parametrize("pint_en,fn,a,b", [
+    (pint_en, fn, a, b) \
+            for pint_en in (False, True) \
+            for fn in (
+                lambda a, b: a << b,
+                lambda a, b: a >> b,
+            ) \
+            for (a, b) in [
+                # Cross product of all POS_INTS elements, except those that
+                # match
+                (a, b) for a in POS_INTS for b in POS_INTS if a != b
+            ]
+])
+def test_qty_int_shift_op(pint_en, fn, a, b):
+    _enable_pint(pint_en)
+    qa = hszinc.Quantity(a)
+    qb = hszinc.Quantity(b)
 
-                yield _check_qty_op, pint_en, lambda a, b: a ** b, a, b
+    # Reference value
+    ref = fn(a, b)
 
-
-def test_qty_cmp():
-    def _check_qty_cmp(pint_en):
-        if 'cmp' not in set(locals().keys()):
-            def cmp(a, b):
-                return a.__cmp__(b)
-
-        _enable_pint(pint_en)
-
-        a = hszinc.Quantity(-3)
-        b = hszinc.Quantity(432)
-        c = hszinc.Quantity(4, unit='A')
-        d = hszinc.Quantity(10, unit='A')
-        e = hszinc.Quantity(12, unit='V')
-
-        assert cmp(a, b) < 0
-        assert cmp(b, a) > 0
-        assert cmp(a, hszinc.Quantity(-3)) == 0
-        assert cmp(c, d) < 0
-        assert cmp(d, c) > 0
-        assert cmp(c, hszinc.Quantity(4, unit='A')) == 0
-
-        try:
-            cmp(c, e)
-        except TypeError as ex:
-            assert str(ex) == 'Quantity units differ: A vs V'
-
-    for pint_en in (False, True):
-        yield _check_qty_cmp, pint_en
+    assert fn(qa, qb) == ref
+    assert fn(qa, b) == ref
+    assert fn(a, qb) == ref
 
 
-def test_qty_std_method():
-    def _check_qty_cmp(pint_en):
-        r = repr(hszinc.Quantity(4, unit='A'))
-        if six.PY2:
-            assert (r == 'BasicQuantity(4, u\'A\')') or (r == 'PintQuantity(4, u\'A\')')
-        else:
-            assert (r == 'BasicQuantity(4, \'A\')') or (r == 'PintQuantity(4, \'A\')')
-        assert str(hszinc.Quantity(4, unit='A')) == '4 A'
+@pytest.mark.parametrize("pint_en", [(False,), (True,)])
+def test_qty_cmp(pint_en):
+    if 'cmp' not in set(locals().keys()):
+        def cmp(a, b):
+            return a.__cmp__(b)
 
-    yield _check_qty_cmp, True
-    yield _check_qty_cmp, False
+    _enable_pint(pint_en)
+
+    a = hszinc.Quantity(-3)
+    b = hszinc.Quantity(432)
+    c = hszinc.Quantity(4, unit='A')
+    d = hszinc.Quantity(10, unit='A')
+    e = hszinc.Quantity(12, unit='V')
+
+    assert cmp(a, b) < 0
+    assert cmp(b, a) > 0
+    assert cmp(a, hszinc.Quantity(-3)) == 0
+    assert cmp(c, d) < 0
+    assert cmp(d, c) > 0
+    assert cmp(c, hszinc.Quantity(4, unit='A')) == 0
+
+    try:
+        cmp(c, e)
+    except TypeError as ex:
+        assert str(ex) == 'Quantity units differ: A vs V'
+
+
+@pytest.mark.parametrize("pint_en", [(False,), (True,)])
+def test_qty_std_method(pint_en):
+    r = repr(hszinc.Quantity(4, unit='A'))
+    if six.PY2:
+        assert (r == 'BasicQuantity(4, u\'A\')') or (r == 'PintQuantity(4, u\'A\')')
+    else:
+        assert (r == 'BasicQuantity(4, \'A\')') or (r == 'PintQuantity(4, \'A\')')
+    assert str(hszinc.Quantity(4, unit='A')) == '4 A'
 
 
 class MyCoordinate(object):
@@ -387,8 +418,8 @@ def test_coord_default_method():
     if six.PY2:
         ref_str = ref_str.encode('utf-8')
 
-    eq_(repr(coord), 'Coordinate(33.77, -77.45)')
-    eq_(str(coord), ref_str)
+    assert repr(coord) == 'Coordinate(33.77, -77.45)'
+    assert str(coord) == ref_str
 
 
 def test_xstr_hex():
